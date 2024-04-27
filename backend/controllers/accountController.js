@@ -31,14 +31,16 @@ const sendMoney = async (req, res) => {
   try {
     const zodResponse = moneyTransferSchema.safeParse(inputData);
     const dataResponse = zodResponse.data;
+    // console.log(dataResponse);
     if (!zodResponse.success) {
+      console.log(zodResponse.error);
       res.status(401).json({ error: zodResponse.error });
       return;
     }
 
     const amount = dataResponse.amount;
     const reciever = dataResponse.reciever;
-    console.log('reciever', reciever);
+    // console.log('reciever', reciever);
     const session = await mongoose.startSession();
     session.startTransaction();
     const senderAccount = await Account.findOne({ userId }).session(session);

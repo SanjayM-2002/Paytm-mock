@@ -9,6 +9,10 @@ const signupSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
 });
+const signinSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
 const updateDetailsSchema = z.object({
   password: z.string().min(8).optional(),
   firstName: z.string().optional(),
@@ -47,7 +51,43 @@ const signup = async (req, res) => {
     await newAccount.save();
     // console.log('user id is: ', newUser._id);
     const token = jwt.sign({ userId: newUser._id }, jwtSecret);
-    res.status(201).json({ message: newUser, token });
+    const { password, ...messageWithoutPassword } = newUser.toObject();
+    res.status(201).json({ message: messageWithoutPassword, token });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+    return;
+  }
+};
+
+const signin = async (req, res) => {
+  const inputData = req.body;
+  try {
+    const zodResponse = signinSchema.safeParse(inputData);
+    if (!zodResponse.success) {
+      res.status(401).json({ error: zodResponse.error });
+      return;
+    }
+    const dataResponse = zodResponse.data;
+    const userExists = await User.findOne({ username: dataResponse.username });
+    if (!userExists) {
+      return res.status(404).json({ error: 'Invalid username' });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(
+      dataResponse.password,
+      userExists.password
+    );
+    if (!isPasswordMatch) {
+      return res.status(404).json({ error: 'Wrong password' });
+    }
+    const token = jwt.sign({ userId: userExists._id }, jwtSecret);
+    res
+      .status(200)
+      .json({
+        message: 'User signed in successfully',
+        token,
+        firstName: userExists.firstName,
+      });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
     return;
@@ -118,4 +158,20 @@ const filterUsers = async (req, res) => {
     return;
   }
 };
-module.exports = { signup, updateDetails, filterUsers };
+
+const getUser = async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    const { password, ...messageWithoutPassword } = user.toObject();
+    res.status(200).json(messageWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+    return;
+  }
+};
+module.exports = { signup, updateDetails, filterUsers, signin, getUser };

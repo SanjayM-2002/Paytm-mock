@@ -1,6 +1,6 @@
 import React from 'react';
 
-const InputBox = ({ label, placeholder }) => {
+const InputBox = ({ label, placeholder, name, onChange, value }) => {
   return (
     <>
       <div>
@@ -10,6 +10,9 @@ const InputBox = ({ label, placeholder }) => {
         <input
           className='w-full px-2 py-1 border rounded border-slate-200'
           placeholder={placeholder}
+          name={name}
+          onChange={onChange}
+          value={value}
         />
       </div>
     </>
